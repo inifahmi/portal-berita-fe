@@ -4,6 +4,8 @@ import Register from "./components/Register";
 import Navbar from "./components/Navbar";
 import HomeUser from "./components/HomeUser";
 import NewsDetail from "./components/NewsDetail";
+import CategoryPage from "./components/KategoriPage";
+import AdminDashboard from "./components/AdminDashboard";
 
 function App() {
   return (
@@ -16,6 +18,8 @@ function App() {
         <Route path="navbar" element={<Navbar />} />
         <Route path="homeuser" element={<HomeUser />} />
         <Route path="newsdetail/:id" element={<NewsDetail />} />
+        <Route path="category/:id" element={<CategoryPage />} />
+        <Route path="admindashboard" element={<AdminDashboard />} />
       </Routes>
     </BrowserRouter>
   );
