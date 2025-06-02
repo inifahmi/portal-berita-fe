@@ -1,18 +1,42 @@
 import React, { useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, Link } from "react-router-dom"; // Import Link
+import axios from "axios"; // Import axios
 
 const Register = () => {
   const [username, setUsername] = useState("");
-  const [nama, setNama] = useState("");
+  const [namaLengkap, setNamaLengkap] = useState(""); // Mengganti nama state dari 'nama' menjadi 'namaLengkap' sesuai ERD
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [role, setRole] = useState("pembaca");
+  const [error, setError] = useState(""); // State untuk pesan error
+  const [success, setSuccess] = useState(""); // State untuk pesan sukses
   const navigate = useNavigate();
 
-  const handleRegister = (e) => {
+  const handleRegister = async (e) => { // Menjadi async function
     e.preventDefault();
-    console.log({ username, nama, email, password, role });
-    navigate("/login"); // Setelah register, arahkan ke login
+    setError(""); // Reset error message
+    setSuccess(""); // Reset success message
+
+    try {
+      // Ganti URL dengan endpoint API register Anda
+      const response = await axios.post("http://localhost:5000/api/register", { // Asumsi API berjalan di port 5000
+        username,
+        nama_lengkap: namaLengkap, // Kirim sebagai nama_lengkap sesuai ERD
+        email,
+        password,
+        role,
+      });
+
+      setSuccess("Pendaftaran berhasil! Silakan login."); // Pesan sukses
+      // Setelah register berhasil, arahkan ke login
+      setTimeout(() => {
+        navigate("/login");
+      }, 2000); // Tunda 2 detik sebelum redirect
+
+    } catch (err) {
+      console.error("Registration failed:", err.response ? err.response.data : err.message);
+      setError(err.response?.data?.message || "Pendaftaran gagal. Silakan coba lagi.");
+    }
   };
 
   return (
@@ -26,7 +50,7 @@ const Register = () => {
                 <p className="has-text-centered is-size-6 has-text-grey mb-4">
                   Portal Berita User Registration
                 </p>
-                
+
                 <form onSubmit={handleRegister}>
                   <div className="field">
                     <label className="label">Username</label>
@@ -48,8 +72,8 @@ const Register = () => {
                       <input
                         type="text"
                         className="input"
-                        value={nama}
-                        onChange={(e) => setNama(e.target.value)}
+                        value={namaLengkap}
+                        onChange={(e) => setNamaLengkap(e.target.value)}
                         placeholder="Enter your full name"
                         required
                       />
@@ -92,23 +116,31 @@ const Register = () => {
                           value={role}
                           onChange={(e) => setRole(e.target.value)}
                         >
-                          <option value="admin_biasa">Admin</option>
-                          <option value="jurnalis">Jurnalis</option>
+                          {/* Pembaca sebagai default untuk pendaftaran self-service */}
                           <option value="pembaca">Pembaca</option>
+                          {/* Admin dan Jurnalis biasanya ditambahkan oleh admin utama */}
+                          {/* <option value="admin_biasa">Admin Biasa</option>
+                          <option value="jurnalis">Jurnalis</option> */}
                         </select>
                       </div>
                     </div>
                   </div>
 
+                  {error && <p className="help is-danger">{error}</p>}
+                  {success && <p className="help is-success">{success}</p>}
+
                   <div className="field mt-5">
-                    <button 
-                      className="button is-fullwidth" 
+                    <button
+                      className="button is-fullwidth"
                       type="submit"
                       style={{ backgroundColor: "#343a40", color: "white" }}
                     >
                       Register
                     </button>
                   </div>
+                  <p className="has-text-centered mt-3">
+                    Sudah punya akun? <Link to="/login">Login di sini</Link>
+                  </p>
                 </form>
               </div>
             </div>
