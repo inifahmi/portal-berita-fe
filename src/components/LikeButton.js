@@ -2,6 +2,7 @@
 import React, { useState, useEffect } from "react";
 import axios from "axios";
 import { Link } from "react-router-dom"; // Untuk link ke login
+import api from "../api/axios.js"
 
 const LikeButton = ({ articleId }) => {
   const [likeCount, setLikeCount] = useState(0);
@@ -20,7 +21,7 @@ const LikeButton = ({ articleId }) => {
       setError("");
 
       // Ambil jumlah like
-      const countResponse = await axios.get(`http://localhost:5000/api/articles/${articleId}/likes/count`);
+      const countResponse = await api.get(`/articles/${articleId}/likes/count`);
       setLikeCount(countResponse.data.count);
 
       // Cek apakah user saat ini sudah like
@@ -28,7 +29,7 @@ const LikeButton = ({ articleId }) => {
         const token = localStorage.getItem("token");
         const config = { headers: { Authorization: `Bearer ${token}` } };
         // Endpoint untuk mengecek apakah user sudah like artikel ini
-        const likedStatusResponse = await axios.get(`http://localhost:5000/api/users/${currentUser.id_user}/likes/${articleId}`, config);
+        const likedStatusResponse = await api.get(`/users/${currentUser.id_user}/likes/${articleId}`, config);
         setIsLiked(likedStatusResponse.data.isLiked);
       } else {
         setIsLiked(false);
@@ -53,12 +54,12 @@ const LikeButton = ({ articleId }) => {
 
       if (isLiked) {
         // Jika sudah like, maka batalkan like
-        await axios.delete(`http://localhost:5000/api/likes/${articleId}`, config); // Endpoint DELETE like
+        await api.delete(`/likes/${articleId}`, config); // Endpoint DELETE like
         setIsLiked(false);
         setLikeCount(prev => prev - 1);
       } else {
         // Jika belum like, maka beri like
-        await axios.post("http://localhost:5000/api/likes", {
+        await api.post("/likes", {
           article_id: articleId,
           user_id: currentUser.id_user
         }, config); // Endpoint POST like

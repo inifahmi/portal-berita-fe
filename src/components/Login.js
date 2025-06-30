@@ -1,6 +1,7 @@
 import React, { useState } from "react";
 import { useNavigate, Link } from "react-router-dom";
 import axios from "axios"; // Import axios
+import api from "../api/axios.js"
 
 const Login = () => {
   const [username, setUsername] = useState("");
@@ -14,7 +15,7 @@ const Login = () => {
 
     try {
       // Ganti URL dengan endpoint API login Anda
-      const response = await axios.post("http://localhost:5000/api/login", { // Asumsi API berjalan di port 5000
+      const response = await api.post("/login", { // Asumsi API berjalan di port 5000
         username,
         password,
       });

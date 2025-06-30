@@ -1,6 +1,7 @@
 // src/components/ManageUsers.js
 import React, { useState, useEffect } from "react";
 import axios from "axios";
+import api from "../api/axios.js"
 
 const ManageUsers = () => {
   const [users, setUsers] = useState([]);
@@ -24,7 +25,7 @@ const ManageUsers = () => {
         }
       };
       // Ganti URL dengan endpoint API Anda untuk mengambil daftar pengguna
-      const response = await axios.get("http://localhost:5000/api/users", config);
+      const response = await api.get("/users", config);
       setUsers(response.data);
       setLoading(false);
     } catch (err) {
@@ -49,7 +50,7 @@ const ManageUsers = () => {
         }
       };
       // Ganti URL dengan endpoint API Anda untuk mengubah peran pengguna
-      await axios.patch(`http://localhost:5000/api/users/${userId}/role`, { role: newRole }, config);
+      await api.patch(`/users/${userId}/role`, { role: newRole }, config);
 
       setMessage(`Peran pengguna berhasil diubah menjadi ${newRole}.`);
       fetchUsers(); // Refresh daftar pengguna
@@ -84,7 +85,7 @@ const ManageUsers = () => {
       // Ganti URL dengan endpoint API Anda untuk men-suspend pengguna (mengatur is_active ke false)
       // Karena kita hilangkan is_active, ini akan menjadi hard delete atau Anda bisa tambahkan kolom is_active lagi
       // Untuk tujuan demo ini, kita akan simulasikan sebagai delete
-      await axios.delete(`http://localhost:5000/api/users/${userId}`, config);
+      await api.delete(`/users/${userId}`, config);
 
       setMessage(`Pengguna ${usernameToSuspend} berhasil di-suspend (dihapus).`);
       fetchUsers(); // Refresh daftar pengguna
@@ -105,7 +106,7 @@ const ManageUsers = () => {
           Authorization: `Bearer ${token}`
         }
       };
-      await axios.post("http://localhost:5000/api/admin/logs", {
+      await api.post("/admin/logs", {
         admin_id: currentUser.id_user,
         target_user_id: targetId, // Contoh: ID user yang diubah/dihapus
         action: actionType,

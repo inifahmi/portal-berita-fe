@@ -1,6 +1,7 @@
 import React, { useState } from "react";
 import { useNavigate, Link } from "react-router-dom"; // Import Link
 import axios from "axios"; // Import axios
+import api from "../api/axios.js"
 
 const Register = () => {
   const [username, setUsername] = useState("");
@@ -19,7 +20,7 @@ const Register = () => {
 
     try {
       // Ganti URL dengan endpoint API register Anda
-      const response = await axios.post("http://localhost:5000/api/register", { // Asumsi API berjalan di port 5000
+      const response = await api.post("/register", { // Asumsi API berjalan di port 5000
         username,
         nama_lengkap: namaLengkap, // Kirim sebagai nama_lengkap sesuai ERD
         email,

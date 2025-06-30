@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom"; // Import useNavigate
 import axios from "axios"; // Import axios
+import api from "../api/axios.js"
 
 const AdminDashboard = () => {
   const [stats, setStats] = useState({
@@ -21,7 +22,7 @@ const AdminDashboard = () => {
         setError(null);
         // Ganti URL dengan endpoint API Anda untuk mengambil statistik
         // Endpoint ini perlu dibuat di backend untuk menghitung data dari tabel
-        const response = await axios.get("http://localhost:5000/api/admin/stats"); // Contoh endpoint
+        const response = await api.get("/admin/stats"); // Contoh endpoint
 
         setStats(response.data); // Asumsi response.data langsung berisi objek stats
         setLoading(false);
@@ -77,10 +78,10 @@ const AdminDashboard = () => {
         navigate('/manage-users'); // Arahkan ke halaman manajemen pengguna untuk suspend
         break;
       case 'review-articles':
-        navigate('/articles?status=menunggu'); // Arahkan ke halaman daftar artikel menunggu
+        navigate('/review-articles'); // Arahkan ke halaman daftar artikel menunggu
         break;
       case 'takedown-content':
-        navigate('/articles?status=diterbitkan'); // Arahkan ke daftar artikel diterbitkan untuk aksi take down
+        navigate('/takedown-content'); // Arahkan ke daftar artikel diterbitkan untuk aksi take down
         break;
       case 'manage-categories':
         navigate('/manage-categories'); // Arahkan ke halaman manajemen kategori
@@ -218,7 +219,7 @@ const AdminDashboard = () => {
                   </div>
                 </div>
 
-                <div className="column">
+                {/* <div className="column">
                   <div className="box has-text-centered">
                     <p className="title is-1 has-text-success">
                       {stats.todayActivity}
@@ -228,7 +229,7 @@ const AdminDashboard = () => {
                       Aktivitas pengguna/admin hari ini
                     </p>
                   </div>
-                </div>
+                </div> */}
 
               </div>
             </div>
@@ -296,7 +297,7 @@ const AdminDashboard = () => {
                     </div>
                   </div>
 
-                  <div className="column">
+                  {/* <div className="column">
                     <div className="box" style={{ backgroundColor: "#f8f9fa" }}>
                       <h3 className="subtitle is-6 mb-3">⚙️ System Control</h3>
                       <div className="buttons are-small">
@@ -321,7 +322,7 @@ const AdminDashboard = () => {
                         </button>
                       </div>
                     </div>
-                  </div>
+                  </div> */}
 
                 </div>
               </div>

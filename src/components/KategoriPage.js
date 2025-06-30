@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { useNavigate, useParams, Link } from "react-router-dom";
 import axios from "axios";
+import api from "../api/axios.js"
 
 const CategoryPage = () => {
   const [articles, setArticles] = useState([]);
@@ -15,7 +16,7 @@ const CategoryPage = () => {
       try {
         setLoading(true);
         setError(null);
-        const response = await axios.get(`http://localhost:5000/api/articles?category=${name}&status=diterbitkan`);
+        const response = await api.get(`/articles?category=${name}&status=diterbitkan`);
         setArticles(response.data);
         setLoading(false);
       } catch (err) {

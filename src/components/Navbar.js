@@ -1,160 +1,141 @@
-import React, { useState, useEffect } from "react";
-import { Link, useNavigate } from "react-router-dom";
-import axios from "axios"; // Import axios
+import React, { useState, useEffect, useRef } from "react";
+import { Link, useNavigate, useLocation } from "react-router-dom";
+import api from "../api/axios.js";
 
 const Navbar = () => {
-  const navigate = useNavigate();
-  const [user, setUser] = useState(null); // Gunakan state untuk user
-  const [searchTerm, setSearchTerm] = useState("");
-  const [showCategory, setShowCategory] = useState(false);
-  const [categories, setCategories] = useState([]); // State untuk kategori dinamis
+    const navigate = useNavigate();
+    const location = useLocation(); // Hook untuk mendeteksi perubahan URL
+    const [user, setUser] = useState(null);
+    const [searchTerm, setSearchTerm] = useState("");
+    const [isCategoryDropdownActive, setCategoryDropdownActive] = useState(false);
+    const [categories, setCategories] = useState([]);
+    const dropdownRef = useRef(null);
 
-  useEffect(() => {
-    // Ambil data user dari localStorage saat komponen dimuat
-    const storedUser = localStorage.getItem("user");
-    if (storedUser) {
-      setUser(JSON.parse(storedUser));
-    }
+    // Efek ini akan berjalan setiap kali Anda berpindah halaman.
+    // Ini memastikan status login di Navbar selalu sinkron.
+    useEffect(() => {
+        try {
+            const storedUser = localStorage.getItem("user");
+            setUser(storedUser ? JSON.parse(storedUser) : null);
+        } catch (error) {
+            console.error("Gagal membaca data user, membersihkan localStorage:", error);
+            localStorage.clear();
+            setUser(null);
+        }
+    }, [location.pathname]);
 
-    // Ambil kategori dari backend
-    const fetchCategories = async () => {
-      try {
-        const response = await axios.get("http://localhost:5000/api/categories"); // Ganti dengan endpoint kategori Anda
-        setCategories(response.data);
-      } catch (error) {
-        console.error("Failed to fetch categories:", error);
-        // Fallback ke kategori hardcode jika API gagal
-        setCategories(["Berita Politik", "Teknologi", "Olahraga", "Hiburan"]);
-      }
+    // Efek ini hanya berjalan sekali untuk mengambil data kategori
+    useEffect(() => {
+        const fetchCategories = async () => {
+            try {
+                const response = await api.get("/categories");
+                if (Array.isArray(response.data)) {
+                    setCategories(response.data);
+                }
+            } catch (error) {
+                console.error("Gagal mengambil kategori:", error);
+            }
+        };
+        fetchCategories();
+    }, []);
+
+    // Efek untuk menangani klik di luar dropdown kategori
+    useEffect(() => {
+        const handleClickOutside = (event) => {
+            if (dropdownRef.current && !dropdownRef.current.contains(event.target)) {
+                setCategoryDropdownActive(false);
+            }
+        };
+        document.addEventListener("mousedown", handleClickOutside);
+        return () => {
+            document.removeEventListener("mousedown", handleClickOutside);
+        };
+    }, []);
+
+    const handleLogout = () => {
+        localStorage.clear();
+        setUser(null);
+        navigate("/login");
     };
-    fetchCategories();
-  }, []); // [] agar hanya berjalan sekali saat mount
 
-  const handleLogout = () => {
-    localStorage.removeItem("token"); // Hapus token
-    localStorage.removeItem("user"); // Hapus info user
-    setUser(null); // Reset state user
-    navigate("/login"); // Arahkan ke login
-  };
+    const handleSearchSubmit = (e) => {
+        e.preventDefault();
+        if (searchTerm.trim()) {
+            navigate(`/search?q=${searchTerm}`);
+            setSearchTerm("");
+        }
+    };
 
-  const handleSearchSubmit = (e) => {
-    e.preventDefault();
-    // Implementasi pencarian sebenarnya: arahkan ke halaman hasil pencarian
-    navigate(`/search?q=${searchTerm}`); // Contoh: /search?q=teknologi
-    setSearchTerm("");
-  };
+    return (
+        <nav className="navbar is-dark" role="navigation" aria-label="main navigation">
+            <div className="container">
+                <div className="navbar-brand">
+                    <Link to="/" className="navbar-item has-text-weight-bold">
+                        Portal Berita
+                    </Link>
+                </div>
 
-  return (
-    <nav className="navbar is-dark" role="navigation" aria-label="main navigation">
-      <div className="container">
-        <div className="navbar-brand">
-          <Link to="/" className="navbar-item has-text-weight-bold">
-            Portal Berita
-          </Link>
-        </div>
+                <div className="navbar-menu is-active">
+                    <div className="navbar-start">
+                        <Link to="/" className="navbar-item">Home</Link>
 
-        <div className="navbar-menu is-active">
-          <div className="navbar-start">
-            <Link to="/" className="navbar-item">
-              Home
-            </Link>
+                        <div
+                            className={`navbar-item has-dropdown ${isCategoryDropdownActive ? 'is-active' : ''}`}
+                            ref={dropdownRef}
+                        >
+                            <a className="navbar-link" onClick={() => setCategoryDropdownActive(!isCategoryDropdownActive)}>
+                                Kategori
+                            </a>
+                            <div className="navbar-dropdown">
+                                {categories.map((cat) => (
+                                    <Link
+                                        key={cat.id_category}
+                                        to={`/category/${cat.name}`}
+                                        className="navbar-item"
+                                        onClick={() => setCategoryDropdownActive(false)}
+                                    >
+                                        {cat.name}
+                                    </Link>
+                                ))}
+                            </div>
+                        </div>
 
-            <div className={`navbar-item has-dropdown ${showCategory ? 'is-active' : ''}`}>
-              <a
-                className="navbar-link"
-                onClick={() => setShowCategory(!showCategory)}
-              >
-                Kategori
-              </a>
+                        {user && (user.role === 'admin_utama' || user.role === 'admin_biasa' || user.role === 'jurnalis') && (
+                            <Link to="/my-articles" className="navbar-item">Artikel Saya</Link>
+                        )}
+                        {user && (user.role === 'admin_utama' || user.role === 'admin_biasa') && (
+                            <Link to="/admindashboard" className="navbar-item">Dashboard</Link>
+                        )}
+                    </div>
 
-              <div className="navbar-dropdown">
-                {categories.map((cat) => (
-                  <Link key={cat.id_category || cat} to={`/category/${cat.name || cat}`} className="navbar-item">
-                    {cat.name || cat}
-                  </Link>
-                ))}
-              </div>
+                    <div className="navbar-end">
+                        <div className="navbar-item">
+                            <form onSubmit={handleSearchSubmit}>
+                                <div className="field has-addons">
+                                    <div className="control"><input className="input is-small" type="text" placeholder="Cari berita..." value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} /></div>
+                                    <div className="control"><button type="submit" className="button is-dark is-small">Cari</button></div>
+                                </div>
+                            </form>
+                        </div>
+
+                        {user ? (
+                            <>
+                                <div className="navbar-item"><p className="has-text-grey-light">Halo, {user.username}</p></div>
+                                <div className="navbar-item"><button onClick={handleLogout} className="button is-danger is-small">Logout</button></div>
+                            </>
+                        ) : (
+                            <div className="navbar-item">
+                                <div className="buttons">
+                                    <Link to="/login" className="button is-primary is-small">Login</Link>
+                                    <Link to="/register" className="button is-light is-small">Register</Link>
+                                </div>
+                            </div>
+                        )}
+                    </div>
+                </div>
             </div>
-
-            {/* Tautan khusus peran */}
-            {user && (user.role === 'admin_utama' || user.role === 'admin_biasa') && (
-                <Link to="/admindashboard" className="navbar-item">
-                    Dashboard Admin
-                </Link>
-            )}
-            {user && (user.role === 'admin_utama' || user.role === 'admin_biasa' || user.role === 'jurnalis') && (
-                <Link to="/create-article" className="navbar-item">
-                    Buat Artikel
-                </Link>
-            )}
-            {/* Tambahkan link ke halaman manajemen user/kategori jika ada role yang diizinkan */}
-            {user && user.role === 'admin_utama' && (
-                <Link to="/manage-users" className="navbar-item">
-                    Kelola Pengguna
-                </Link>
-            )}
-            {user && (user.role === 'admin_utama' || user.role === 'admin_biasa') && (
-                <Link to="/manage-categories" className="navbar-item">
-                    Kelola Kategori
-                </Link>
-            )}
-          </div>
-
-          <div className="navbar-end">
-            <div className="navbar-item">
-              <form onSubmit={handleSearchSubmit} style={{ width: "250px" }}>
-                <div className="field has-addons">
-                  <div className="control is-expanded">
-                    <input
-                      className="input"
-                      type="text"
-                      placeholder="Cari berita..."
-                      value={searchTerm}
-                      onChange={(e) => setSearchTerm(e.target.value)}
-                    />
-                  </div>
-                  <div className="control">
-                    <button type="submit" className="button is-dark">
-                      Cari
-                    </button>
-                  </div>
-                </div>
-              </form>
-            </div>
-
-            {user ? (
-              <>
-                <Link to="/profile" className="navbar-item"> {/* Link ke halaman profil pengguna */}
-                  Halo, {user.username}
-                </Link>
-                <div className="navbar-item">
-                  <button
-                    onClick={handleLogout}
-                    className="button is-danger is-small"
-                  >
-                    Logout
-                  </button>
-                </div>
-              </>
-            ) : (
-              <>
-                <div className="navbar-item">
-                  <Link to="/login" className="button is-primary is-small">
-                    Login
-                  </Link>
-                </div>
-                <div className="navbar-item">
-                  <Link to="/register" className="button is-light is-small">
-                    Register
-                  </Link>
-                </div>
-              </>
-            )}
-          </div>
-        </div>
-      </div>
-    </nav>
-  );
+        </nav>
+    );
 };
 
 export default Navbar;

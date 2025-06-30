@@ -1,198 +1,198 @@
 // src/components/CreateArticle.js
 import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import axios from "axios";
+import api from "../api/axios.js";
 
 const CreateArticle = () => {
-  const [title, setTitle] = useState("");
-  const [content, setContent] = useState("");
-  const [thumbnailUrl, setThumbnailUrl] = useState("");
-  const [status, setStatus] = useState("draft"); // Default status
-  const [categories, setCategories] = useState([]); // Daftar kategori dari API
-  const [selectedCategories, setSelectedCategories] = useState([]); // Kategori yang dipilih untuk artikel
-  const [error, setError] = useState("");
-  const [success, setSuccess] = useState("");
-  const [loadingCategories, setLoadingCategories] = useState(true);
-  const navigate = useNavigate();
+    const [title, setTitle] = useState("");
+    const [content, setContent] = useState("");
+    const [thumbnailFile, setThumbnailFile] = useState(null);
+    const [status, setStatus] = useState("draft");
+    const [categories, setCategories] = useState([]);
+    const [selectedCategories, setSelectedCategories] = useState([]);
+    const [error, setError] = useState("");
+    const [success, setSuccess] = useState("");
+    const [loading, setLoading] = useState(false);
+    const navigate = useNavigate();
 
-  // Ambil daftar kategori dari API saat komponen dimuat
-  useEffect(() => {
-    const fetchCategories = async () => {
-      try {
-        setLoadingCategories(true);
-        const response = await axios.get("http://localhost:5000/api/categories");
-        setCategories(response.data);
-        setLoadingCategories(false);
-      } catch (err) {
-        console.error("Gagal mengambil kategori:", err);
-        setError("Gagal memuat daftar kategori.");
-        setLoadingCategories(false);
-      }
+    // Mengambil daftar kategori dari API saat komponen dimuat
+    useEffect(() => {
+        const fetchCategories = async () => {
+            try {
+                const response = await api.get("/categories");
+                setCategories(response.data);
+            } catch (err) {
+                console.error("Gagal mengambil kategori:", err);
+                setError("Gagal memuat daftar kategori.");
+            }
+        };
+        fetchCategories();
+    }, []);
+
+    const handleFileChange = (e) => {
+        setThumbnailFile(e.target.files[0]);
     };
-    fetchCategories();
-  }, []);
 
-  const handleSubmit = async (e) => {
-    e.preventDefault();
-    setError("");
-    setSuccess("");
+    const handleCategoryChange = (e) => {
+        const value = Array.from(e.target.selectedOptions, (option) => option.value);
+        setSelectedCategories(value);
+    };
 
-    try {
-      const user = JSON.parse(localStorage.getItem("user"));
-      if (!user || !user.id_user) {
-        setError("Anda harus login untuk membuat artikel.");
-        return;
-      }
+    const handleSubmit = async (e) => {
+        e.preventDefault();
+        setError("");
+        setSuccess("");
 
-      const articleData = {
-        title,
-        content,
-        thumbnail_url: thumbnailUrl,
-        author_id: user.id_user,
-        status,
-        category_ids: selectedCategories // Kirim array ID kategori yang dipilih
-      };
-
-      // Pastikan ada token autentikasi
-      const token = localStorage.getItem("token");
-      const config = {
-        headers: {
-          Authorization: `Bearer ${token}`
+        if (!thumbnailFile) {
+            setError("Thumbnail gambar wajib diunggah.");
+            return;
         }
-      };
 
-      // Ganti URL dengan endpoint API Anda untuk membuat artikel baru
-      const response = await axios.post("http://localhost:5000/api/articles", articleData, config);
+        setLoading(true);
 
-      setSuccess("Artikel berhasil dibuat!");
-      // Reset form atau arahkan ke halaman detail artikel baru
-      setTimeout(() => {
-        navigate(`/newsdetail/${response.data.id_article}`); // Asumsi backend mengembalikan id_article yang baru dibuat
-      }, 1500);
+        const formData = new FormData();
+        formData.append("title", title);
+        formData.append("content", content);
+        formData.append("status", status);
+        formData.append("thumbnail", thumbnailFile);
+        formData.append("category_ids_str", JSON.stringify(selectedCategories));
 
-    } catch (err) {
-      console.error("Gagal membuat artikel:", err.response ? err.response.data : err.message);
-      setError(err.response?.data?.message || "Gagal membuat artikel. Pastikan semua kolom terisi dengan benar.");
-    }
-  };
+        try {
+            const response = await api.post("/articles", formData, {
+                headers: {
+                    'Content-Type': 'multipart/form-data'
+                }
+            });
 
-  const handleCategoryChange = (e) => {
-    const value = Array.from(e.target.selectedOptions, option => option.value);
-    setSelectedCategories(value);
-  };
+            setSuccess("Artikel berhasil dibuat! Anda akan diarahkan...");
+            
+            setTimeout(() => {
+                navigate(`/newsdetail/${response.data.data.id_article}`);
+            }, 2000);
 
-  return (
-    <div className="hero is-fullheight">
-      <div className="hero-body">
-        <div className="container">
-          <div className="columns is-centered">
-            <div className="column is-two-thirds">
-              <div className="box">
-                <h1 className="title has-text-centered is-4">Buat Artikel Baru</h1>
-                <p className="has-text-centered is-size-6 has-text-grey mb-4">
-                  Isi detail artikel Anda
-                </p>
+        } catch (err) {
+            const errorMessage = err.response?.data?.message || "Gagal membuat artikel.";
+            setError(errorMessage);
+        } finally {
+            setLoading(false);
+        }
+    };
 
-                <form onSubmit={handleSubmit}>
-                  <div className="field">
-                    <label className="label">Judul Artikel</label>
-                    <div className="control">
-                      <input
-                        className="input"
-                        type="text"
-                        placeholder="Masukkan judul artikel"
-                        value={title}
-                        onChange={(e) => setTitle(e.target.value)}
-                        required
-                      />
-                    </div>
-                  </div>
+    return (
+        <section className="section">
+            <div className="container">
+                <div className="columns is-centered">
+                    <div className="column is-two-thirds">
+                        <div className="box">
+                            <h1 className="title has-text-centered">Buat Artikel Baru</h1>
+                            
+                            <form onSubmit={handleSubmit}>
+                                {error && <div className="notification is-danger is-light">{error}</div>}
+                                {success && <div className="notification is-success is-light">{success}</div>}
 
-                  <div className="field">
-                    <label className="label">Konten Artikel</label>
-                    <div className="control">
-                      <textarea
-                        className="textarea"
-                        placeholder="Tulis konten artikel di sini..."
-                        rows="10"
-                        value={content}
-                        onChange={(e) => setContent(e.target.value)}
-                        required
-                      ></textarea>
-                    </div>
-                  </div>
+                                <div className="field">
+                                    <label className="label">Judul Artikel</label>
+                                    <div className="control">
+                                        <input
+                                            className="input"
+                                            type="text"
+                                            placeholder="Masukkan judul artikel"
+                                            value={title}
+                                            onChange={(e) => setTitle(e.target.value)}
+                                            required
+                                            disabled={loading}
+                                        />
+                                    </div>
+                                </div>
 
-                  <div className="field">
-                    <label className="label">URL Thumbnail Gambar</label>
-                    <div className="control">
-                      <input
-                        className="input"
-                        type="url"
-                        placeholder="https://example.com/image.jpg"
-                        value={thumbnailUrl}
-                        onChange={(e) => setThumbnailUrl(e.target.value)}
-                        required
-                      />
-                    </div>
-                  </div>
+                                <div className="field">
+                                    <label className="label">Thumbnail Gambar</label>
+                                    <div className="control">
+                                        <div className="file has-name is-fullwidth">
+                                            <label className="file-label">
+                                                <input 
+                                                    className="file-input" 
+                                                    type="file" 
+                                                    name="thumbnail"
+                                                    accept="image/*"
+                                                    onChange={handleFileChange}
+                                                    required
+                                                    disabled={loading}
+                                                />
+                                                <span className="file-cta">
+                                                    <span className="file-icon">
+                                                        <i className="fas fa-upload"></i>
+                                                    </span>
+                                                    <span className="file-label">
+                                                        Pilih gambar…
+                                                    </span>
+                                                </span>
+                                                <span className="file-name">
+                                                    {thumbnailFile ? thumbnailFile.name : "Belum ada file terpilih"}
+                                                </span>
+                                            </label>
+                                        </div>
+                                    </div>
+                                    <p className="help">Ukuran file maksimal: 5MB.</p>
+                                </div>
 
-                  <div className="field">
-                    <label className="label">Kategori</label>
-                    <div className="control">
-                      {loadingCategories ? (
-                        <p>Memuat kategori...</p>
-                      ) : categories.length > 0 ? (
-                        <div className="select is-multiple is-fullwidth">
-                          <select multiple size="3" value={selectedCategories} onChange={handleCategoryChange}>
-                            {categories.map(cat => (
-                              <option key={cat.id_category} value={cat.id_category}>{cat.name}</option>
-                            ))}
-                          </select>
+                                <div className="field">
+                                    <label className="label">Konten Artikel</label>
+                                    <div className="control">
+                                        <textarea
+                                            className="textarea"
+                                            placeholder="Tulis konten artikel di sini..."
+                                            rows="10"
+                                            value={content}
+                                            onChange={(e) => setContent(e.target.value)}
+                                            required
+                                            disabled={loading}
+                                        ></textarea>
+                                    </div>
+                                </div>
+
+                                <div className="field">
+                                    <label className="label">Kategori</label>
+                                    <div className="control">
+                                        <div className="select is-multiple is-fullwidth">
+                                            <select multiple size="3" value={selectedCategories} onChange={handleCategoryChange} disabled={loading}>
+                                                {categories.map((cat) => (
+                                                    <option key={cat.id_category} value={cat.id_category}>
+                                                        {cat.name}
+                                                    </option>
+                                                ))}
+                                            </select>
+                                        </div>
+                                        <p className="help">Pilih satu atau beberapa kategori (tahan Ctrl/Cmd untuk memilih banyak).</p>
+                                    </div>
+                                </div>
+
+                                <div className="field">
+                                    <label className="label">Status Artikel</label>
+                                    <div className="control">
+                                        <div className="select is-fullwidth">
+                                            <select value={status} onChange={(e) => setStatus(e.target.value)} disabled={loading}>
+                                                <option value="draft">Simpan sebagai Draft</option>
+                                                <option value="menunggu">Kirim untuk Review</option>
+                                            </select>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div className="field is-grouped is-grouped-centered mt-5">
+                                    <div className="control">
+                                        <button type="submit" className={`button is-link ${loading ? 'is-loading' : ''}`} disabled={loading}>
+                                            Simpan Artikel
+                                        </button>
+                                    </div>
+                                </div>
+                            </form>
                         </div>
-                      ) : (
-                        <p className="has-text-danger">Tidak ada kategori tersedia. Harap tambahkan kategori terlebih dahulu.</p>
-                      )}
-                      <p className="help">Pilih satu atau beberapa kategori (tekan Ctrl/Cmd untuk memilih banyak).</p>
                     </div>
-                  </div>
-
-                  <div className="field">
-                    <label className="label">Status Artikel</label>
-                    <div className="control">
-                      <div className="select is-fullwidth">
-                        <select value={status} onChange={(e) => setStatus(e.target.value)}>
-                          <option value="draft">Draft</option>
-                          <option value="menunggu">Menunggu Review</option>
-                          {/* Admin mungkin punya opsi langsung menerbitkan */}
-                          {/* <option value="diterbitkan">Terbitkan Langsung</option> */}
-                        </select>
-                      </div>
-                    </div>
-                  </div>
-
-                  {error && <p className="help is-danger">{error}</p>}
-                  {success && <p className="help is-success">{success}</p>}
-
-                  <div className="field is-grouped is-grouped-centered mt-5">
-                    <div className="control">
-                      <button type="submit" className="button is-link">
-                        Simpan Artikel
-                      </button>
-                    </div>
-                    <div className="control">
-                      <button type="button" className="button is-light" onClick={() => navigate(-1)}>
-                        Batal
-                      </button>
-                    </div>
-                  </div>
-                </form>
-              </div>
+                </div>
             </div>
-          </div>
-        </div>
-      </div>
-    </div>
-  );
+        </section>
+    );
 };
 
 export default CreateArticle;

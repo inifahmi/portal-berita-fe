@@ -1,6 +1,7 @@
 // src/components/ManageCategories.js
 import React, { useState, useEffect } from "react";
 import axios from "axios";
+import api from "../api/axios.js"
 
 const ManageCategories = () => {
   const [categories, setCategories] = useState([]);
@@ -26,7 +27,7 @@ const ManageCategories = () => {
         }
       };
       // Ganti URL dengan endpoint API Anda untuk mengambil daftar kategori
-      const response = await axios.get("http://localhost:5000/api/categories", config);
+      const response = await api.get("/categories", config);
       setCategories(response.data);
       setLoading(false);
     } catch (err) {
@@ -56,14 +57,14 @@ const ManageCategories = () => {
 
       if (editingCategory) {
         // Mode edit
-        await axios.put(`http://localhost:5000/api/categories/${editingCategory.id_category}`, {
+        await api.put(`/categories/${editingCategory.id_category}`, {
           name: newCategoryName
         }, config);
         setMessage("Kategori berhasil diperbarui!");
         await logAdminAction(editingCategory.id_category, 'ubah_kategori', `Kategori ID ${editingCategory.id_category} diubah menjadi ${newCategoryName}`);
       } else {
         // Mode tambah
-        const response = await axios.post("http://localhost:5000/api/categories", {
+        const response = await api.post("/categories", {
           name: newCategoryName,
           created_by: currentUser.id_user // Mengisi created_by
         }, config);
@@ -101,7 +102,7 @@ const ManageCategories = () => {
         }
       };
       // Ganti URL dengan endpoint API Anda untuk menghapus kategori
-      await axios.delete(`http://localhost:5000/api/categories/${categoryId}`, config);
+      await api.delete(`/categories/${categoryId}`, config);
       setMessage("Kategori berhasil dihapus!");
       fetchCategories(); // Refresh list
       await logAdminAction(categoryId, 'hapus_kategori', `Kategori ID ${categoryId} (${categoryName}) dihapus`);
@@ -119,7 +120,7 @@ const ManageCategories = () => {
           Authorization: `Bearer ${token}`
         }
       };
-      await axios.post("http://localhost:5000/api/admin/logs", {
+      await api.post("/admin/logs", {
         admin_id: currentUser.id_user,
         target_category_id: targetId, // ID kategori yang diubah/dihapus/ditambah
         action: actionType,
